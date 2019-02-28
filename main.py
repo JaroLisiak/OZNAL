@@ -1,13 +1,17 @@
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
+rawData = pd.read_csv("data.csv")
 
+try:
+    corr = rawData.corr()
 
-print("dsdsdsadsadasdsa")
-print(pd.__version__)
+    sns.heatmap(corr,annot=True,center=0,robust=True,cmap="Blues")
 
-asdas = pd.read_csv("data.csv")
-
-print(asdas.head())
+    plt.show()
+except Exception as e:
+    print(e)
 
 
 
