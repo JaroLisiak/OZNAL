@@ -11,7 +11,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 rawData = pd.read_csv("data.csv")
 
 try:
-    prepdata = rawData.drop(columns=['time','date','id','recordInDay','plantIrradiance','plantTemperature'])
+    prepdata = rawData.drop(columns=['time','date','id','recordInDay','plantIrradiance','plantTemperature','weatherPressure','weatherWindSpeed','dayID','hour','recordInDay'])
 
     X_train = prepdata.drop(columns=['plantPower'])[:-589]
     X_test = prepdata.drop(columns=['plantPower'])[-589:]
