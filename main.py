@@ -19,23 +19,47 @@ from sklearn.metrics import mean_squared_error, r2_score
 rawData = pd.read_csv("data.csv")
 # TODO: spravim priemerne dni-> predpovedam pre den
 # TODO: na cyklicke veliciny pouzivam sin / cosinus (najst viac na google)
+window_size = 100
+predicted_array = []
+real_array = []
+error1 = 0
+error2 = 0.0
+count = 0
 try:
     # Hodiny jednotlivo
     prepdata = rawData.drop(columns=['date','time','id','recordInDay','plantIrradiance','plantTemperature','hour'])
+
     for index, row in prepdata.iterrows():
-        #subdata = prepdata.drop(index)
+        print(index + " / " + len(prepdata))
 
-        X_train = prepdata.drop(columns=['plantPower'],index=index) # na tomto sa uci
-        X_test = prepdata # toto sa snazi trafit pocas ucenia
-        Y_train = prepdata['plantPower'][:-589] # na zaklade tohto chcem predpovedat
-        Y_test = prepdata['plantPower'][-589:] # toto chcem predpovedou ziskat
+        if index+window_size+1 >= len(prepdata):
+            break
+        X_train = prepdata.loc[index:index+window_size].drop(columns=['plantPower']) # na tomto sa uci
+        X_test = prepdata.loc[[index+window_size+1]].drop(columns=['plantPower']) # na zaklade tohto chcem predpovedat
+        Y_train = prepdata.loc[index:index+window_size]['plantPower'] # toto sa snazi trafit pocas ucenia
+        Y_test =  prepdata.loc[[index+window_size+1]]['plantPower'] # toto chcem predpovedou ziskat
+        #Linerna regressia
+        reg = linear_model.LinearRegression()
+        reg.fit(X_train,Y_train)
+        predicted = reg.predict(X_test)
+
+        predicted_array.insert(index, predicted)
+        real_array.insert(index, Y_test[index+window_size+1])
+        count += 1
+        error1 += mean_squared_error(Y_test, predicted)
+
+
+    error2 += r2_score(real_array, predicted_array)
 
 
 
-    #Linerna regressia
-    reg = linear_model.LinearRegression()
-    reg.fit(X_train,Y_train)
-    predicted = reg.predict(X_test)
+
+
+    print(error1 / count)
+    print(error2)
+
+
+
 
     # plt.title("Linearna predikcia priemernych dni")
     # plt.ylabel("Priemerny vykon elektrarne")
