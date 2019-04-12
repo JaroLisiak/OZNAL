@@ -1,6 +1,14 @@
+from builtins import print
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.neural_network import MLPRegressor
+from sklearn.utils.testing import (assert_raises, assert_greater, assert_equal, assert_false)
+from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import make_friedman2
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
@@ -9,19 +17,36 @@ from sklearn import datasets, linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 
 rawData = pd.read_csv("data.csv")
-
+# TODO: spravim priemerne dni-> predpovedam pre den
+# TODO: na cyklicke veliciny pouzivam sin / cosinus (najst viac na google)
 try:
-    prepdata = rawData.drop(columns=['time','date','id','recordInDay','plantIrradiance','plantTemperature','weatherPressure','weatherWindSpeed','dayID','hour','recordInDay'])
+    # Hodiny jednotlivo
+    prepdata = rawData.drop(columns=['date','time','id','recordInDay','plantIrradiance','plantTemperature','hour'])
+    for index, row in prepdata.iterrows():
+        #subdata = prepdata.drop(index)
 
-    X_train = prepdata.drop(columns=['plantPower'])[:-589]
-    X_test = prepdata.drop(columns=['plantPower'])[-589:]
+        X_train = prepdata.drop(columns=['plantPower'],index=index) # na tomto sa uci
+        X_test = prepdata # toto sa snazi trafit pocas ucenia
+        Y_train = prepdata['plantPower'][:-589] # na zaklade tohto chcem predpovedat
+        Y_test = prepdata['plantPower'][-589:] # toto chcem predpovedou ziskat
 
-    Y_train = prepdata['plantPower'][:-589]
-    Y_test = prepdata['plantPower'][-589:]
 
+
+    #Linerna regressia
     reg = linear_model.LinearRegression()
     reg.fit(X_train,Y_train)
     predicted = reg.predict(X_test)
+
+    # plt.title("Linearna predikcia priemernych dni")
+    # plt.ylabel("Priemerny vykon elektrarne")
+    # plt.xlabel("Predpovedany den")
+    #
+    # Y_test = Y_test.reset_index(drop=True)
+    # plt.plot(Y_test)
+    # plt.plot(predicted)
+    # plt.plot(predicted,marker='o',markersize=4,color='orange')
+    # plt.legend(['Original', 'Predicted'], loc=9 )
+    # plt.show()
 
     # The coefficients
     print('Coefficients: \n', reg.coef_)
@@ -30,6 +55,114 @@ try:
     # Explained variance score: 1 is perfect prediction
     print('Variance score: %.2f' % r2_score(Y_test, predicted))
 
+
+
+
+
+    # # spriemerovat den
+    # dataa = rawData.groupby(['dayID']).mean()
+    # prepdata = dataa.drop(columns=['id','recordInDay','plantIrradiance','plantTemperature','hour'])
+    # X_train = prepdata.drop(columns=['plantPower'])[:-31]
+    # X_test = prepdata.drop(columns=['plantPower'])[-31:]
+    # Y_train = prepdata['plantPower'][:-31]
+    # Y_test = prepdata['plantPower'][-31:]
+    #
+    # #Linerna regressia
+    # reg = linear_model.LinearRegression()
+    # reg.fit(X_train,Y_train)
+    # predicted = reg.predict(X_test)
+    #
+    # plt.title("Linearna predikcia priemernych dni")
+    # plt.ylabel("Priemerny vykon elektrarne")
+    # plt.xlabel("Predpovedany den")
+    #
+    # Y_test = Y_test.reset_index(drop=True)
+    # plt.plot(Y_test)
+    # plt.plot(predicted)
+    # plt.plot(predicted,marker='o',markersize=4,color='orange')
+    # plt.legend(['Original', 'Predicted'], loc=9 )
+    # plt.show()
+    #
+    # # The coefficients
+    # print('Coefficients: \n', reg.coef_)
+    # # The mean squared error
+    # print("Mean squared error: %.2f" % mean_squared_error(Y_test, predicted))
+    # # Explained variance score: 1 is perfect prediction
+    # print('Variance score: %.2f' % r2_score(Y_test, predicted))
+
+
+
+    # # Logisticka regresia
+    # # zistili sme ze sa pouziva pre predpoved clasifikacie, teda predpoveda len 0 a 1 v kategorii
+    # prepdata = rawData.drop(columns=['id','recordInDay','plantIrradiance','plantTemperature','hour','date','time','dayID'])
+    # X_train = prepdata.drop(columns=['plantPower'])[:-589]
+    # X_test = prepdata.drop(columns=['plantPower'])[-589:]
+    # Y_train = prepdata['plantPower'][:-589]
+    # Y_test = prepdata['plantPower'][-589:]
+    # logreg = LogisticRegression(C=1e5, solver='lbfgs', multi_class='multinomial')
+    # # Create an instance of Logistic Regression Classifier and fit the data.
+    # logreg.fit(X_train, Y_train)
+    # Z = logreg.predict(X_test)
+    # print("Accuracy of logistic regression classifier on test set:" + Z)
+
+    # # Mlp pre hodiny
+    # prepdata = rawData.drop(columns=['id','recordInDay','plantIrradiance','plantTemperature','hour','date','time','dayID'])
+    # #TODO: odstranit iba posledny den a predpovedat iba jeden den + pocitat priemernu chybu
+    #
+    # #for index in prepdata:
+    # X_train = prepdata.drop(columns=['plantPower'])[:-6953]
+    # X_test = prepdata.drop(columns=['plantPower'])[-6953:]
+    # Y_train = prepdata['plantPower'][:-6953]
+    # Y_test = prepdata['plantPower'][-6953:]
+    # mlp = MLPRegressor()
+    # mlp.fit(X_train, Y_train)
+    # y_predict = mlp.predict(X_test)
+    #
+    #
+    #
+    # print("Mean squared error: %.2f" % mean_squared_error(Y_test, y_predict))
+    # # Explained variance score: 1 is perfect prediction
+    # print('Variance score: %.2f' % r2_score(Y_test, y_predict))
+    # #assert_greater(mlp.score(X_train, Y_train), 0.9)
+    # plt.plot(Y_test.reset_index())
+    # plt.plot(y_predict)
+    # plt.show()
+
+
+    #MPL pre avg den
+    # dataa = rawData.groupby(['dayID']).mean()
+    # prepdata = dataa.drop(columns=['id','recordInDay','plantIrradiance','plantTemperature','hour'])
+    # X_train = prepdata.drop(columns=['plantPower'])[:-31]
+    # X_test = prepdata.drop(columns=['plantPower'])[-31:]
+    # Y_train = prepdata['plantPower'][:-31]
+    # Y_test = prepdata['plantPower'][-31:]
+    # mlp = MLPRegressor(solver= 'lbfgs',activation='identity',hidden_layer_sizes=(10,),max_iter=1000)
+    # mlp.fit(X_train, Y_train)
+    # y_predict = mlp.predict(X_test)
+    # print(mlp.intercepts_);
+    # print("Pocet iteracii solvera: %.2f" % mlp.n_iter_)
+    # print("Mean squared error: %.2f" % mean_squared_error(Y_test, y_predict))
+    # # Explained variance score: 1 is perfect prediction
+    # print('Variance score: %.2f' % r2_score(Y_test, y_predict))
+    # #assert_greater(mlp.score(X_train, Y_train), 0.9)
+    # plt.plot(Y_test.reset_index(drop=True))
+    # plt.plot(y_predict)
+    # plt.legend(['Original', 'Predicted'], loc=9)
+    # plt.show()
+
+
+
+
+
+
+
+    # pokus o gaussovu regresiu
+    # kernel = DotProduct() + WhiteKernel()
+    # gpr = GaussianProcessRegressor(kernel=kernel, random_state = 100)
+    # gpr.fit(X_train, Y_train)
+    #
+    # print(gpr.score(X_train, Y_train))
+    # print("done")
 
     # knn = KNeighborsRegressor()
     # knn.fit(train[['dayID', 'hour', 'weatherCloudCover', 'weatherDewPoint', 'weatherHumidity', 'weatherPressure', 'weatherTemperature', 'weatherWindBearing', 'weatherWindSpeed']], train[['plantPower']])
